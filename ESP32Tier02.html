@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <title>Smart Home - LED Control</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --bg-gradient: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+      --card-bg: rgba(255, 255, 255, 0.9);
+      --primary: #4e54c8;
+      --secondary: #8f94fb;
+      --text-main: #2d3436;
+      --text-light: #636e72;
+      --led-on-color: #ffcc00; /* สีเหลืองทอง */
+      --led-on-glow: 0 0 25px rgba(255, 204, 0, 0.6);
+      --shadow-soft: 0 10px 30px rgba(0,0,0,0.08);
+    }
+
+    body {
+      font-family: 'Kanit', sans-serif;
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      background: var(--bg-gradient);
+      color: var(--text-main);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* --- Login Section --- */
+    #loginForm {
+      background: var(--card-bg);
+      backdrop-filter: blur(10px);
+      padding: 3rem;
+      border-radius: 25px;
+      box-shadow: var(--shadow-soft);
+      text-align: center;
+      max-width: 350px;
+      width: 90%;
+      animation: fadeIn 0.8s ease-out;
+    }
+
+    #loginForm h2 {
+      margin-bottom: 1.5rem;
+      color: var(--primary);
+    }
+
+    .input-group {
+      position: relative;
+      margin-bottom: 1.5rem;
+    }
+
+    .input-group i {
+      position: absolute;
+      left: 15px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-light);
+    }
+
+    #loginForm input {
+      width: 100%;
+      padding: 12px 12px 12px 45px;
+      border: 2px solid #e0e0e0;
+      border-radius: 50px;
+      font-family: 'Kanit', sans-serif;
+      box-sizing: border-box;
+      outline: none;
+      transition: 0.3s;
+    }
+
+    #loginForm input:focus {
+      border-color: var(--primary);
+    }
+
+    #loginBtn {
+      width: 100%;
+      padding: 12px;
+      border: none;
+      border-radius: 50px;
+      background: linear-gradient(to right, var(--primary), var(--secondary));
+      color: white;
+      font-size: 1.1rem;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 5px 15px rgba(78, 84, 200, 0.3);
+      transition: transform 0.2s;
+    }
+
+    #loginBtn:hover {
+      transform: scale(1.05);
+    }
+
+    /* --- Dashboard Section --- */
+    #dashboard {
+      display: none; /* ซ่อนไว้ก่อน Login */
+      width: 100%;
+      max-width: 800px;
+      padding: 20px;
+      box-sizing: border-box;
+      animation: slideUp 0.6s ease-out;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    .header h1 {
+      font-size: 2.5rem;
+      margin: 0;
+      color: #333;
+    }
+    
+    .header p {
+      color: var(--text-light);
+    }
+
+    /* Grid Layout for Cards */
+    .controls-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 30px;
+      justify-content: center;
+      margin-bottom: 40px;
+    }
+
+    /* LED Card Styling */
+    .led-card {
+      background: #ffffff;
+      border-radius: 20px;
+      padding: 30px;
+      text-align: center;
+      box-shadow: var(--shadow-soft);
+      transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+      position: relative;
+      overflow: hidden;
+      border: 2px solid transparent;
+    }
+
+    .led-card:hover {
+      transform: translateY(-5px);
+    }
+
+    /* สถานะไฟเปิด (Class นี้จะถูกใส่ด้วย JS) */
+    .led-card.active {
+      border-color: var(--led-on-color);
+      box-shadow: var(--led-on-glow);
+    }
+
+    .icon-wrapper {
+      font-size: 4rem;
+      color: #ddd;
+      margin-bottom: 20px;
+      transition: color 0.3s, text-shadow 0.3s;
+    }
+
+    .led-card.active .icon-wrapper {
+      color: var(--led-on-color);
+      text-shadow: 0 0 20px rgba(255, 204, 0, 0.8);
+      animation: pulse 2s infinite;
+    }
+
+    .led-card h3 {
+      margin: 10px 0;
+      font-size: 1.4rem;
+    }
+
+    .status-text {
+      font-size: 0.9rem;
+      color: var(--text-light);
+      margin-bottom: 20px;
+      font-weight: 300;
+    }
+
+    /* Toggle Button Styling */
+    .toggle-btn {
+      width: 100%;
+      padding: 15px;
+      border: none;
+      border-radius: 12px;
+      font-family: 'Kanit', sans-serif;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    /* ปุ่มปิด (สีเทา) */
+    .btn-off {
+      background: #f1f2f6;
+      color: #7f8fa6;
+    }
+
+    /* ปุ่มเปิด (Gradient เขียว) */
+    .btn-on {
+      background: linear-gradient(135deg, #11998e, #38ef7d);
+      color: white;
+      box-shadow: 0 5px 15px rgba(56, 239, 125, 0.4);
+    }
+
+    .btn-off:hover { background: #e1e2e6; }
+    .btn-on:hover { transform: scale(1.02); }
+
+    /* --- Global Controls --- */
+    .global-actions {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+
+    .action-btn {
+      padding: 12px 25px;
+      border: none;
+      border-radius: 50px;
+      font-family: 'Kanit', sans-serif;
+      cursor: pointer;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transition: transform 0.2s;
+      color: white;
+    }
+
+    .btn-logout {
+      background: #ff5f6d;
+      background: -webkit-linear-gradient(to right, #ffc371, #ff5f6d);
+      background: linear-gradient(to right, #ffc371, #ff5f6d);
+      box-shadow: 0 4px 15px rgba(255, 95, 109, 0.3);
+    }
+
+    .action-btn:hover {
+      transform: scale(1.05);
+    }
+
+    /* Animations */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes slideUp {
+      from { opacity: 0; margin-top: 50px; }
+      to { opacity: 1; margin-top: 0; }
+    }
+    @keyframes pulse {
+      0% { text-shadow: 0 0 20px rgba(255, 204, 0, 0.6); }
+      50% { text-shadow: 0 0 40px rgba(255, 204, 0, 0.9); }
+      100% { text-shadow: 0 0 20px rgba(255, 204, 0, 0.6); }
+    }
+
+    footer {
+      margin-top: 50px;
+      font-size: 0.8rem;
+      color: #888;
+    }
+
+  </style>
+</head>
+<body>
+
+  <div id="loginForm">
+    <div style="font-size: 3.5rem; color: var(--primary); margin-bottom: 10px;">
+      <i class="fas fa-home"></i>
+    </div>
+    <h2>เข้าสู่ระบบ</h2>
+    <div class="input-group">
+      <i class="fas fa-envelope"></i>
+      <input type="email" id="email" placeholder="Email" required />
+    </div>
+    <div class="input-group">
+      <i class="fas fa-lock"></i>
+      <input type="password" id="password" placeholder="Password" required />
+    </div>
+    <button id="loginBtn">LOGIN</button>
+  </div>
+
+  <div id="dashboard">
+    <div class="header">
+      <h1><i class="fas fa-bolt" style="color: #ffcc00;"></i> Smart LED Control</h1>
+      <p>ควบคุมระบบไฟส่องสว่างผ่าน WiFi</p>
+    </div>
+
+    <div class="controls-grid">
+      
+      <div class="led-card" id="card1">
+        <div class="icon-wrapper">
+          <i class="fas fa-lightbulb"></i>
+        </div>
+        <h3>หลอดไฟ 1 (LED 1)</h3>
+        <p class="status-text" id="status1">กำลังโหลด...</p>
+        <button id="btn1" class="toggle-btn btn-off">เปิดไฟ</button>
+      </div>
+
+      <div class="led-card" id="card2">
+        <div class="icon-wrapper">
+          <i class="fas fa-lightbulb"></i>
+        </div>
+        <h3>หลอดไฟ 2 (LED 2)</h3>
+        <p class="status-text" id="status2">กำลังโหลด...</p>
+        <button id="btn2" class="toggle-btn btn-off">เปิดไฟ</button>
+      </div>
+
+    </div>
+
+    <div class="global-actions">
+      <button id="logoutBtn" class="action-btn btn-logout">
+        <i class="fas fa-sign-out-alt"></i> ออกจากระบบ
+      </button>
+    </div>
+    
+    <footer style="text-align:center;">
+        ESP32 Smart Home Project © 2026
+    </footer>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
+
+  <script>
+    // ----------------------------------------------------
+    // 1. Firebase Configuration
+    // ----------------------------------------------------
+    const firebaseConfig = {
+  apiKey: "AIzaSyCifvQ5eMxFtUegFuKMzmCYIIavOliXsBw",
+  authDomain: "esp32tier2-eaec0.firebaseapp.com",
+  databaseURL: "https://esp32tier2-eaec0-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "esp32tier2-eaec0",
+  storageBucket: "esp32tier2-eaec0.firebasestorage.app",
+  messagingSenderId: "501407565000",
+  appId: "1:501407565000:web:20c6b5e48897ba695111fd"
+};
+
+    firebase.initializeApp(firebaseConfig);
+
+    // ----------------------------------------------------
+    // 2. User Credentials (Hardcoded for simplicity)
+    // ----------------------------------------------------
+    const allowedEmail = "002@gmail.com";
+    const allowedPassword = "1234567";
+
+    // ----------------------------------------------------
+    // 3. UI Elements
+    // ----------------------------------------------------
+    const loginForm = document.getElementById("loginForm");
+    const dashboard = document.getElementById("dashboard");
+    const loginBtn = document.getElementById("loginBtn");
+
+    // ----------------------------------------------------
+    // 4. Login Logic
+    // ----------------------------------------------------
+    loginBtn.addEventListener("click", () => {
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value;
+
+      if (!email || !password) {
+        alert("กรุณากรอกข้อมูลให้ครบถ้วน");
+        return;
+      }
+
+      if(email === allowedEmail && password === allowedPassword){
+        // Sign in anonymously or with actual auth if configured (using provided credentials)
+        firebase.auth().signInWithEmailAndPassword(email, password)
+          .then(userCredential => {
+            console.log("Login Success");
+            loginForm.style.display = "none";
+            dashboard.style.display = "block";
+            // เริ่มการทำงานเชื่อมต่อ Database
+            startLedControl();
+          })
+          .catch(error => {
+            alert("Login Failed: " + error.message);
+          });
+      } else {
+        alert("อีเมลหรือรหัสผ่านไม่ถูกต้อง");
+      }
+    });
+
+    // ----------------------------------------------------
+    // 5. LED Control Logic
+    // ----------------------------------------------------
+    function startLedControl() {
+      const db = firebase.database();
+
+      // กำหนด LED Devices เหลือแค่ 2 ตัว และเปลี่ยน Path เป็น led1, led2
+      const devices = [
+        { id: 1, path: "led1" },
+        { id: 2, path: "led2" }
+      ];
+
+      devices.forEach(device => {
+        const statusText = document.getElementById(`status${device.id}`);
+        const toggleButton = document.getElementById(`btn${device.id}`);
+        const card = document.getElementById(`card${device.id}`); 
+        const ref = db.ref("/" + device.path);
+
+        // Listener: ทำงานเมื่อค่าใน Firebase เปลี่ยนแปลง
+        ref.on("value", (snapshot) => {
+          const state = snapshot.val(); // true = ON, false = OFF
+          
+          if(state) {
+            // กรณีไฟเปิด
+            statusText.innerText = "สถานะ: เปิดอยู่ (ON)";
+            statusText.style.color = "#2ecc71";
+            
+            toggleButton.innerText = "ปิดไฟ";
+            toggleButton.className = "toggle-btn btn-off"; // เปลี่ยนปุ่มเป็นสีเทา (สำหรับกดปิด)
+            
+            card.classList.add("active"); // เพิ่ม Glow Effect
+          } else {
+            // กรณีไฟปิด
+            statusText.innerText = "สถานะ: ปิดอยู่ (OFF)";
+            statusText.style.color = "#95a5a6";
+
+            toggleButton.innerText = "เปิดไฟ";
+            toggleButton.className = "toggle-btn btn-on"; // เปลี่ยนปุ่มเป็นสีเขียว (สำหรับกดเปิด)
+            
+            card.classList.remove("active"); // เอา Glow Effect ออก
+          }
+        });
+
+        // Click Event: เมื่อกดปุ่มให้สลับค่าใน Firebase
+        toggleButton.onclick = () => {
+          ref.get().then(snap => {
+            // สลับค่า true <-> false
+            ref.set(!snap.val());
+          });
+        };
+      });
+    }
+
+    // ----------------------------------------------------
+    // 6. Logout Logic
+    // ----------------------------------------------------
+    document.getElementById("logoutBtn").onclick = () => {
+      firebase.auth().signOut()
+        .then(() => {
+          location.reload(); // รีโหลดหน้าเว็บเพื่อกลับไปหน้า Login
+        });
+    };
+  </script>
+</body>
+</html>
